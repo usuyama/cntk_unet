@@ -3,8 +3,7 @@ from __future__ import print_function
 import numpy as np
 
 import cntk as C
-from cntk.learner import learning_rate_schedule, UnitType
-from cntk.utils import ProgressPrinter
+from cntk.learners import learning_rate_schedule, UnitType
 
 import simulation
 import cntk_unet
@@ -26,10 +25,10 @@ def train(input_images, target_masks, use_existing=False):
     if use_existing:
         z.load_model(checkpoint_file)
 
-    # Instantiate the trainer object to drive the model training
-    lr_per_minibatch = learning_rate_schedule(0.125, UnitType.minibatch)
-    progress_printer = ProgressPrinter(0)
-    trainer = C.Trainer(z, (-dice_coef, -dice_coef), [C.sgd(z.parameters, lr=lr_per_minibatch)], [progress_printer])
+    # Prepare model and trainer
+    lr = learning_rate_schedule(0.00001, UnitType.sample)
+    momentum = C.learners.momentum_as_time_constant_schedule(0)
+    trainer = C.Trainer(z, (-dice_coef, -dice_coef), C.learners.adam(z.parameters, lr=lr, momentum=momentum))
 
     # Get minibatches of training data and perform model training
     minibatch_size = 2
@@ -51,6 +50,6 @@ if __name__ == '__main__':
     shape = (1, 128, 128)
     data_size = 500
 
-    input_images, target_masks = simulation.generate_minibatch(shape, data_size)
+    input_images, target_masks = simulation.generate_random_data(shape, data_size)
 
     train(input_images, target_masks, False)
