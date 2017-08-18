@@ -2,22 +2,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 def plot_img_array(img_array, ncol=3):
-    nrow = int(len(img_array) / ncol)
+    nrow = len(img_array) // ncol
 
     f, plots = plt.subplots(nrow, ncol, sharex='all', sharey='all', figsize=(ncol * 4, nrow * 4))
-    if len(img_array.shape) == 4:
-        img_array = np.reshape(img_array, (img_array.shape[0], img_array.shape[2], img_array.shape[3]))
 
     for i in range(len(img_array)):
         plots[i // ncol, i % ncol]
-        plots[i // ncol, i % ncol].imshow(img_array[i], cmap='gray')
-
-def plot(img):
-    if len(img.shape) == 3:
-        img = np.reshape(img, img.shape[1:])
-
-    plt.imshow(img, cmap='gray', interpolation='nearest')
-    plt.show()
+        plots[i // ncol, i % ncol].imshow(img_array[i])
 
 from functools import reduce
 def plot_side_by_side(img_arrays):
@@ -38,3 +29,18 @@ def plot_errors(results_dict, title):
         plt.legend(loc=3, bbox_to_anchor=(1, 0))
 
     plt.show()
+
+def masks_to_colorimg(masks):
+    colors = np.asarray([(201, 58, 64), (242, 207, 1), (0, 152, 75), (101, 172, 228),(56, 34, 132), (160, 194, 56)])
+
+    colorimg = np.ones((masks.shape[1], masks.shape[2], 3), dtype=np.float32) * 255
+    channels, height, width = masks.shape
+
+    for y in range(height):
+        for x in range(width):
+            selected_colors = colors[masks[:,y,x] > 0.5]
+
+            if len(selected_colors) > 0:
+                colorimg[y,x,:] = np.mean(selected_colors, axis=0)
+
+    return colorimg.astype(np.uint8)

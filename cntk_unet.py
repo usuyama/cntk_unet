@@ -11,7 +11,7 @@ def UpSampling2D(x):
 
     return r
 
-def create_model(input):
+def create_model(input, num_classes):
     conv1 = Convolution((3,3), 32, init=glorot_uniform(), activation=relu, pad=True)(input)
     conv1 = Convolution((3,3), 32, init=glorot_uniform(), activation=relu, pad=True)(conv1)
     pool1 = MaxPooling((2,2), strides=(2,2))(conv1)
@@ -47,12 +47,14 @@ def create_model(input):
     conv9 = Convolution((3,3), 64, init=glorot_uniform(), activation=relu, pad=True)(up9)
     conv9 = Convolution((3,3), 64, init=glorot_uniform(), activation=relu, pad=True)(conv9)
 
-    conv10 = Convolution((1,1), 1, init=glorot_uniform(), activation=sigmoid, pad=True)(conv9)
+    conv10 = Convolution((1,1), num_classes, init=glorot_uniform(), activation=sigmoid, pad=True)(conv9)
 
     return conv10
 
 def dice_coefficient(x, y):
+    # average of per-channel dice coefficient
+    # global dice coefificnet doesn't work as class with larger region dominates the metrics
     # https://en.wikipedia.org/wiki/S%C3%B8rensen%E2%80%93Dice_coefficient
-    intersection = C.reduce_sum(x * y)
+    intersection = C.reduce_sum(x * y, axis=(1,2))
 
-    return 2 * intersection / (C.reduce_sum(x) + C.reduce_sum(y))
+    return C.reduce_mean(2.0 * intersection / (C.reduce_sum(x, axis=(1,2)) + C.reduce_sum(y, axis=(1,2)) + 1.0))
